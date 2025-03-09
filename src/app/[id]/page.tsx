@@ -50,7 +50,6 @@ export default function LockPage(props: { params: Promise<{ id: string }> }) {
     ? (() => {
       // Use the timestamp directly (already in milliseconds since epoch)
       const requestTime = lock.accessRequestedAt;
-      console.log(`access requested timestamp: ${requestTime}`);
 
       // Add delay in milliseconds
       const delayMs = parseInt(String(lock.delayMinutes), 10) * 60000;
@@ -59,10 +58,6 @@ export default function LockPage(props: { params: Promise<{ id: string }> }) {
       return targetTime;
     })()
     : null;
-
-  console.log(`requested at: ${lock?.accessRequestedAt}`);
-  console.log(`countdown date: ${countdownDate}`);
-  console.log(`delay minutes: ${lock?.delayMinutes}`);
 
   // Check if countdown has completed and update state
   useEffect(() => {
@@ -97,6 +92,11 @@ export default function LockPage(props: { params: Promise<{ id: string }> }) {
         const data = await response.json();
         setLock(data);
 
+        // Set the page title if lock title exists
+        if (data.title) {
+          document.title = `${data.title} - LaterLock`;
+        }
+
         // Check if countdown is complete on initial load
         if (data.accessRequestedAt) {
           const requestTime = data.accessRequestedAt; // Already in milliseconds
@@ -115,6 +115,11 @@ export default function LockPage(props: { params: Promise<{ id: string }> }) {
     };
 
     fetchLock();
+
+    // Reset the title when component unmounts
+    return () => {
+      document.title = "LaterLock - Time-Delayed Access";
+    };
   }, [id]);
 
   const handleRequestAccess = async () => {
