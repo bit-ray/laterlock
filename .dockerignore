@@ -1,0 +1,40 @@
+# Versioning and metadata
+.git
+.gitignore
+.dockerignore
+
+# Build dependencies
+node_modules
+dist
+.next
+out
+
+# Environment (contains sensitive data)
+.env*
+!.env.example
+
+# Files not required for production
+README.md
+CHANGELOG.md
+docker-compose.yml
+Dockerfile
+.eslintrc
+.prettierrc
+.editorconfig
+.vscode
+.github
+*.log
+*.md
+*.test.js
+*.spec.js
+
+# Debug files
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+
+# Database files - will be stored in a volume
+*.db
+laterlock.db
+/data 
