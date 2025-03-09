@@ -11,6 +11,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { decryptWithPassword } from "@/app/actions/client-crypto-actions";
 import Countdown from "react-countdown";
 import React from "react";
+import clsx from "clsx";
 
 interface Lock {
   id: string;
@@ -347,20 +348,18 @@ export default function LockPage(props: { params: Promise<{ id: string }> }) {
   };
 
   const countdownRenderer = ({
+    days,
     hours,
     minutes,
     seconds,
     completed,
   }: {
+    days: number;
     hours: number;
     minutes: number;
     seconds: number;
     completed: boolean;
   }) => {
-    // Calculate days and remaining hours
-    const days = Math.floor(hours / 24);
-    const remainingHours = hours % 24;
-
     if (completed) {
       return (
         <div className="text-center flex flex-col gap-2">
@@ -385,9 +384,12 @@ export default function LockPage(props: { params: Promise<{ id: string }> }) {
     return (
       <div className="text-center">
         <p className="mb-2">Time remaining</p>
-        <p className="text-8xl font-bold">
+        <p className={clsx(
+          "font-bold ",
+          days > 0 ? "text-7xl" : "text-8xl"
+        )}>
           {days > 0 ? `${days}d ` : ''}
-          {remainingHours.toString().padStart(2, "0")}:
+          {hours.toString().padStart(2, "0")}:
           {minutes.toString().padStart(2, "0")}:
           {seconds.toString().padStart(2, "0")}
         </p>
@@ -485,6 +487,12 @@ export default function LockPage(props: { params: Promise<{ id: string }> }) {
                   onComplete={() => {
                     setIsCountdownComplete(true);
                   }}
+                  controlled={false}
+                  precision={3}
+                  daysInHours={false}
+                  zeroPadTime={2}
+                  overtime={false}
+                  now={() => Date.now()}
                 />
               ) : (
                 <div className="space-y-4">
@@ -597,10 +605,22 @@ function formatMinutes(minutes: number): string {
   if (minutes < 60) {
     return `${minutes} minute${minutes !== 1 ? "s" : ""}`;
   } else if (minutes < 1440) {
-    const hours = minutes / 60;
-    return `${hours} hour${hours !== 1 ? "s" : ""}`;
+    const hours = Math.floor(minutes / 60);
+    const remainingMinutes = minutes % 60;
+
+    if (remainingMinutes === 0) {
+      return `${hours} hour${hours !== 1 ? "s" : ""}`;
+    } else {
+      return `${hours} hour${hours !== 1 ? "s" : ""} and ${remainingMinutes} minute${remainingMinutes !== 1 ? "s" : ""}`;
+    }
   } else {
-    const days = minutes / 1440;
-    return `${days} day${days !== 1 ? "s" : ""}`;
+    const days = Math.floor(minutes / 1440);
+    const remainingHours = Math.floor((minutes % 1440) / 60);
+
+    if (remainingHours === 0) {
+      return `${days} day${days !== 1 ? "s" : ""}`;
+    } else {
+      return `${days} day${days !== 1 ? "s" : ""} and ${remainingHours} hour${remainingHours !== 1 ? "s" : ""}`;
+    }
   }
 } 
