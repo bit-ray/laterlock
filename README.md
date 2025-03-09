@@ -20,7 +20,7 @@ The unique URL to the lock page uses a nanoid (which uses secure RNG) with 30 ch
 
 ## Tools
 
-- Next.js 15, shadcn/ui, Tailwind CSS
+- Next.js 15, shadcn/ui, Tailwind CSS, iconoir
 - SQLite with Drizzle ORM
 
 ## License

@@ -12,6 +12,7 @@ import { decryptWithPassword } from "@/app/actions/client-crypto-actions";
 import Countdown from "react-countdown";
 import React from "react";
 import clsx from "clsx";
+import LockIcon from "@/components/LockIcon";
 
 interface Lock {
   id: string;
@@ -437,7 +438,10 @@ export default function LockPage(props: { params: Promise<{ id: string }> }) {
     <div className="container max-w-3xl py-8 mx-auto">
       <div className="mb-6 text-center">
         <Link href="/">
-          <h1 className="text-4xl lg:text-6xl font-extrabold text-primary hover:opacity-80 transition-opacity">⏱LaterLock</h1>
+          <h1 className="text-4xl lg:text-6xl font-extrabold text-primary hover:opacity-80 transition-opacity flex items-center justify-center">
+            <LockIcon />
+            LaterLock
+          </h1>
         </Link>
       </div>
 

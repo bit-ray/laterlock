@@ -1,12 +1,16 @@
 import Link from "next/link";
 import CreateLockForm from "@/components/CreateLockForm";
+import LockIcon from "@/components/LockIcon";
 
 export default function Home() {
   return (
     <main className="flex flex-col items-center pt-16 px-4 md:px-8">
       <div className="max-w-3xl w-full space-y-12">
         <div className="text-center space-y-4">
-          <h1 className="text-6xl lg:text-8xl font-extrabold text-primary">⏱LaterLock</h1>
+          <h1 className="text-6xl lg:text-8xl font-extrabold text-primary flex items-center justify-center">
+            <LockIcon />
+            LaterLock
+          </h1>
           <div className="text-2xl lg:text-3xl text-muted-foreground">
             <p>Store any text securely behind a time lock</p>
           </div>
