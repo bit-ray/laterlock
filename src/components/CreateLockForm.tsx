@@ -241,7 +241,7 @@ export default function CreateLockForm() {
             Creating...
           </>
         ) : (
-          "Create Lock"
+          "Lock It"
         )}
       </Button>
     </form>
