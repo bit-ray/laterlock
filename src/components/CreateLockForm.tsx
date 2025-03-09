@@ -142,7 +142,7 @@ export default function CreateLockForm() {
           className="min-h-[150px]"
           maxLength={MAX_CONTENT_LENGTH}
           {...register("content", {
-            required: "Content is required",
+            required: "Type something to lock",
             maxLength: {
               value: MAX_CONTENT_LENGTH,
               message: `Content cannot exceed ${MAX_CONTENT_LENGTH} characters`
@@ -150,10 +150,11 @@ export default function CreateLockForm() {
             onChange: (e) => setContentLength(e.target.value.length)
           })}
         />
-        <div className="flex justify-end">
+        <div className="flex justify-between gap-2">
           {errors.content && (
             <p className="text-sm text-red-500">{errors.content.message}</p>
           )}
+          {!errors.content && <div className="flex-gap"></div>}
           <p className={`text-sm ${contentLength > MAX_CONTENT_LENGTH ? 'text-red-500' : 'text-muted-foreground'}`}>
             {contentLength}/{MAX_CONTENT_LENGTH} characters
           </p>
