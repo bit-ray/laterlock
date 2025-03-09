@@ -20,6 +20,8 @@ COPY . .
 # Uncomment the following line in case you want to disable telemetry during the build.
 ENV NEXT_TELEMETRY_DISABLED 1
 
+# Install specific architecture dependencies for libsql
+RUN npm install @libsql/linux-arm64-musl --legacy-peer-deps
 # Ensure libsql modules are properly built for the target architecture
 RUN npm rebuild @libsql/client --target_arch=arm64 --target_platform=linux
 RUN npm run build
@@ -36,8 +38,10 @@ RUN adduser --system --uid 1001 nextjs
 
 # Create a directory for the database that can be mounted as a volume
 RUN mkdir -p /app/data
+# Change permissions to allow writing to the directory even if mounted with different ownership
+RUN chmod 777 /app/data
+# Still set the ownership for when not using volume mounts
 RUN chown nextjs:nodejs /app/data
-ENV DB_DIR /app/data
 
 COPY --from=builder /app/public ./public
 
@@ -49,6 +53,8 @@ RUN chown nextjs:nodejs .next
 # https://nextjs.org/docs/advanced-features/output-file-tracing
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
+# Copy node_modules with native dependencies
+COPY --from=builder --chown=nextjs:nodejs /app/node_modules/@libsql ./node_modules/@libsql
 
 USER nextjs
 
