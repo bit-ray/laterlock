@@ -1,57 +1,27 @@
 # LaterLock
 
-LaterLock is a Next.js application that allows users to lock content behind a time-delay mechanism. Users can store any text and only access it after a self-imposed waiting period.
+LaterLock is a simple Next.js application that allows securely storing text behind a time lock.
 
-## Features
+## How does it work?
 
-- Create locks with any text content
-- Set a custom time delay (1 minute to 1 week)
-- Optional password protection with encryption
-- Unique, permanent, anonymous URLs for each lock
-- Countdown timer with cancel option
-- Responsive UI with modern design
+1. Enter any text you want to lock away temporarily.
+1. Set the unlock delay. This is how long it will take to unlock the content after you request it.
+1. Optionally encrypt with a password.
+1. Bookmark the unique link to get back to it later.
+1. To access it again, request unlock and wait for the delay.
 
-## Use Cases
+## Is it secure?
 
-- Self-imposed cooling-off periods before important decisions
-- Time-delayed access to sensitive information
-- Preventing impulsive actions by adding friction
-- Creating suspense for creative reveals or announcements
+When a password is provided, data is encrypted in the browser. Otherwise, it's encrypted on the server with a system-wide key.
 
-## Tech Stack
+Encryption is done using AES-256-GCM and PBKDF2 with HMAC-SHA-256 (600,000 iterations) for key derivation, similar to the encryption used by password managers.
 
-- **Framework**: Next.js 14 with App Router
-- **UI Components**: shadcn/ui
-- **Styling**: Tailwind CSS
-- **Database**: SQLite with Drizzle ORM
-- **Authentication**: Password-based encryption with CryptoJS
-- **Form Handling**: React Hook Form
-- **State Management**: React Hooks
+The unique URL to the lock page uses a nanoid (which uses secure RNG) with 30 characters, which is overkill.
 
-## Getting Started
+## Tools
 
-1. Clone the repository
-2. Install dependencies with `npm install`
-3. Run the development server with `npm run dev`
-4. Open [http://localhost:3000](http://localhost:3000) in your browser
-
-## How It Works
-
-1. A user provides any string into an input box
-2. The user chooses how long of a delay to require
-3. A password can optionally be provided for encryption
-4. After submitting, the user is redirected to a unique URL
-5. This URL allows the user to request access to their original input
-6. If access is requested, a countdown timer begins according to their specified delay
-7. The countdown can be canceled
-8. At the end of the countdown, the content is unlocked and can be viewed
-
-## Security
-
-- When a password is provided, the content is encrypted using AES-256 with PBKDF2 key derivation (100,000 iterations)
-- Encryption is performed client-side using CryptoJS
-- Even with direct database access, encrypted content cannot be read without the password
-- No identifying information is stored with the locked content
+- Next.js 15, shadcn/ui, Tailwind CSS
+- SQLite with Drizzle ORM
 
 ## License
 
