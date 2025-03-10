@@ -50,8 +50,6 @@ export default function CreateLockForm() {
     handleSubmit,
     formState: { errors },
     watch,
-    setValue,
-    trigger,
   } = useForm<FormData>();
 
   // Watch the content field to update character count
@@ -266,7 +264,7 @@ export default function CreateLockForm() {
             placeholder="Enter a secure password"
             {...register("password", {
               required: usePassword ? "Password is required" : false,
-              validate: (value) => {
+              validate: () => {
                 if (usePassword && passwordStrength.score < 2) {
                   return "Password needs to be stronger";
                 }
