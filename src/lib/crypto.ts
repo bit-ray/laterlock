@@ -3,10 +3,16 @@
 
 import crypto from 'crypto';
 
+
 // System key for encrypting non-password protected content
 // This is a constant key used for all non-password protected content
-// In a production environment, this should be stored in environment variables
-const SYSTEM_KEY = process.env.LATERLOCK_SYSTEM_KEY || 'DEVELOPMENT';
+function getSystemKey(): string {
+  const systemKey = process.env.LATERLOCK_SYSTEM_KEY;
+  if (!systemKey) {
+    throw new Error('LATERLOCK_SYSTEM_KEY is not set');
+  }
+  return systemKey;
+}
 
 // Generate a random salt for key derivation
 export function generateSalt(): string {
@@ -91,7 +97,7 @@ export async function encryptWithSystemKey(content: string): Promise<{
   salt: string;
 }> {
   // Use the system key instead of a user-provided password
-  return encryptContent(content, SYSTEM_KEY);
+  return encryptContent(content, getSystemKey());
 }
 
 // Decrypt content using AES-GCM
@@ -133,5 +139,5 @@ export async function decryptWithSystemKey(
   encryptedContent: string,
   salt: string,
 ): Promise<string> {
-  return await decryptContent(encryptedContent, SYSTEM_KEY, salt);
+  return await decryptContent(encryptedContent, getSystemKey(), salt);
 }
