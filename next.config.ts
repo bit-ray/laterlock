@@ -1,33 +1,20 @@
 import type { NextConfig } from "next";
 
-// Determine if we're in production mode
-const isProd = process.env.NODE_ENV === 'production';
-
 const securityHeaders = [
   {
     key: 'Content-Security-Policy',
-    value: [
-      "default-src 'self'",
-      // In production, remove unsafe-inline and unsafe-eval for better security
-      isProd
-        ? "script-src 'self'"
-        : "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
-      // In production, try to remove unsafe-inline if possible
-      isProd
-        ? "style-src 'self'"
-        : "style-src 'self' 'unsafe-inline'",
-      "img-src 'self' data: blob:",
-      "font-src 'self'",
-      "connect-src 'self'",
-      "media-src 'self'",
-      "object-src 'none'",
-      "child-src 'self'",
-      "frame-ancestors 'none'",
-      "form-action 'self'",
-      "base-uri 'self'",
-      "manifest-src 'self'",
-      "upgrade-insecure-requests",
-    ].join('; '),
+    value: `
+      default-src 'self';
+      script-src 'self' 'unsafe-eval' 'unsafe-inline';
+      style-src 'self' 'unsafe-inline';
+      img-src 'self' blob: data:;
+      font-src 'self';
+      object-src 'none';
+      base-uri 'self';
+      form-action 'self';
+      frame-ancestors 'none';
+      upgrade-insecure-requests;
+    `.replace(/\n/g, ''),
   },
   {
     key: 'X-Content-Type-Options',
