@@ -13,6 +13,7 @@ import Countdown from "react-countdown";
 import React from "react";
 import clsx from "clsx";
 import LockIcon from "@/components/LockIcon";
+import { ClipboardCopy } from "lucide-react";
 
 interface Lock {
   id: string;
@@ -221,6 +222,9 @@ export default function LockPage(props: { params: Promise<{ id: string }> }) {
       const updatedLock = await updatedLockResponse.json();
       setLock(updatedLock);
 
+      // Reset countdown state
+      setIsCountdownComplete(false);
+
       // Hide content if it was showing
       setShowContent(false);
       setDecryptedContent("");
@@ -348,6 +352,16 @@ export default function LockPage(props: { params: Promise<{ id: string }> }) {
     }
   };
 
+  const handleCopyToClipboard = async () => {
+    try {
+      await navigator.clipboard.writeText(decryptedContent);
+      toast.success("Copied to clipboard");
+    } catch (error) {
+      console.error("Failed to copy: ", error);
+      toast.error("Failed to copy to clipboard");
+    }
+  };
+
   const countdownRenderer = ({
     days,
     hours,
@@ -462,11 +476,25 @@ export default function LockPage(props: { params: Promise<{ id: string }> }) {
             <div className="mb-6">
               {showContent ? (
                 <div className="space-y-4">
-                  <div className="p-4 bg-background">
+                  <div className="px-4 bg-background">
                     <pre className="whitespace-pre-wrap break-words">
                       {decryptedContent}
                     </pre>
                   </div>
+
+                  <div className="flex justify-end">
+                    {showContent && isCountdownComplete && (
+                      <Button
+                        onClick={handleCopyToClipboard}
+                        variant="link"
+                        size="sm"
+                        className="text-xs text-muted-foreground cursor-pointer"
+                      >
+                        <ClipboardCopy className="h-3 w-3 mr-1" />
+                      </Button>
+                    )}
+                  </div>
+
                   <div className="flex flex-col gap-2">
                     <Button
                       variant="secondary"
@@ -501,7 +529,7 @@ export default function LockPage(props: { params: Promise<{ id: string }> }) {
               ) : (
                 <div className="space-y-4">
                   <div className="p-4 bg-background text-center">
-                    <p className="mb-2 text-xl">Lock delay is {formatMinutes(lock.delayMinutes)}</p>
+                    <p className="mb-2 text-xl">Unlock delay is {formatMinutes(lock.delayMinutes)}</p>
                   </div>
                   <Button
                     onClick={handleRequestAccess}
