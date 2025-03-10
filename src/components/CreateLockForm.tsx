@@ -3,15 +3,17 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
-import { Loader2 } from "lucide-react";
+import { Loader2, HelpCircle } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { toast } from "sonner";
 import { encryptWithPassword } from "@/app/actions/client-crypto-actions";
+import zxcvbn from "zxcvbn";
 
 // Define the maximum content length
 const MAX_CONTENT_LENGTH = 2000;
@@ -38,21 +40,65 @@ export default function CreateLockForm() {
   const [delayValue, setDelayValue] = useState(15);
   const [selectedUnit, setSelectedUnit] = useState(TIME_UNITS[0].value);
   const [contentLength, setContentLength] = useState(0);
+  const [passwordStrength, setPasswordStrength] = useState<{
+    score: number;
+    feedback: { warning: string; suggestions: string[] };
+  }>({ score: 0, feedback: { warning: "", suggestions: [] } });
 
   const {
     register,
     handleSubmit,
     formState: { errors },
     watch,
+    setValue,
+    trigger,
   } = useForm<FormData>();
 
   // Watch the content field to update character count
   const content = watch("content", "");
+  const password = watch("password", "");
 
   // Update character count when content changes
   useEffect(() => {
     setContentLength(content.length);
   }, [content]);
+
+  // Evaluate password strength when it changes
+  useEffect(() => {
+    if (password && usePassword) {
+      const result = zxcvbn(password);
+      setPasswordStrength({
+        score: result.score,
+        feedback: result.feedback,
+      });
+    } else {
+      setPasswordStrength({ score: 0, feedback: { warning: "", suggestions: [] } });
+    }
+  }, [password, usePassword]);
+
+  // Get password strength text
+  const getStrengthText = (score: number): string => {
+    switch (score) {
+      case 0: return "Weak";
+      case 1: return "Weak";
+      case 2: return "Fair";
+      case 3: return "Good";
+      case 4: return "Strong";
+      default: return "Weak";
+    }
+  };
+
+  // Get password strength color
+  const getStrengthColor = (score: number): string => {
+    switch (score) {
+      case 0: return "text-red-500";
+      case 1: return "text-red-500";
+      case 2: return "text-orange-500";
+      case 3: return "text-green-500";
+      case 4: return "text-green-600";
+      default: return "text-red-500";
+    }
+  };
 
   const onSubmit = async (data: FormData) => {
     try {
@@ -220,12 +266,44 @@ export default function CreateLockForm() {
             placeholder="Enter a secure password"
             {...register("password", {
               required: usePassword ? "Password is required" : false,
-              minLength: {
-                value: 6,
-                message: "Password must be at least 6 characters",
-              },
+              validate: (value) => {
+                if (usePassword && passwordStrength.score < 2) {
+                  return "Password needs to be stronger";
+                }
+                return true;
+              }
             })}
           />
+          {password && (
+            <div className="flex items-center gap-1">
+              <span className={`text-sm font-medium ${getStrengthColor(passwordStrength.score)}`}>
+                {getStrengthText(passwordStrength.score)}
+              </span>
+              {(passwordStrength.feedback.warning || passwordStrength.feedback.suggestions.length > 0) && (
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <HelpCircle className="h-4 w-4 text-muted-foreground cursor-pointer" />
+                  </PopoverTrigger>
+                  <PopoverContent className="w-80">
+                    <div className="space-y-2">
+                      {passwordStrength.feedback.warning && (
+                        <p className="text-sm text-amber-500">{passwordStrength.feedback.warning}</p>
+                      )}
+                      {passwordStrength.feedback.suggestions.length > 0 && (
+                        <div>
+                          <ul className="list-disc pl-5 space-y-1">
+                            {passwordStrength.feedback.suggestions.map((suggestion, index) => (
+                              <li key={index} className="text-sm">{suggestion}</li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
+                    </div>
+                  </PopoverContent>
+                </Popover>
+              )}
+            </div>
+          )}
           {errors.password && (
             <p className="text-sm text-red-500">{errors.password.message}</p>
           )}
