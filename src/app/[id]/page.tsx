@@ -401,7 +401,7 @@ export default function LockPage(props: { params: Promise<{ id: string }> }) {
         <p className="mb-2">Time remaining</p>
         <p className={clsx(
           "font-bold ",
-          days > 0 ? "text-7xl" : "text-8xl"
+          days > 0 ? "text-7xl" : "text-6xl sm:text-8xl "
         )}>
           {days > 0 ? `${days}d ` : ''}
           {hours.toString().padStart(2, "0")}:
@@ -410,7 +410,7 @@ export default function LockPage(props: { params: Promise<{ id: string }> }) {
         </p>
         <Button
           variant="outline"
-          className="w-full font-semibold text-2xl py-8 mt-4"
+          className="w-full font-semibold text-xl py-4 sm:text-2xl sm:py-8 mt-4"
           onClick={handleCancelRequest}
           disabled={cancelingRequest}
         >
@@ -534,7 +534,7 @@ export default function LockPage(props: { params: Promise<{ id: string }> }) {
                   <Button
                     onClick={handleRequestAccess}
                     disabled={requestingAccess}
-                    className="w-full font-semibold text-2xl py-8"
+                    className="w-full font-semibold text-xl py-4 sm:text-2xl sm:py-8 mt-4"
                   >
                     {requestingAccess ? "Starting..." : "Start Unlock"}
                   </Button>

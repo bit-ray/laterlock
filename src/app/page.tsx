@@ -52,9 +52,6 @@ export default function Home() {
                 Help self-control by password-locking device screen time or content controls and storing the password (or part of it) in LaterLock
               </li>
               <li>
-                Slow down online shopping or other impulse decisions
-              </li>
-              <li>
                 Store emergency recovery codes you can share
               </li>
             </ul>
