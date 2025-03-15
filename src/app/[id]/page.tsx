@@ -452,7 +452,7 @@ export default function LockPage(props: { params: Promise<{ id: string }> }) {
     <div className="container max-w-3xl py-8 mx-auto">
       <div className="mb-6 text-center">
         <Link href="/">
-          <h1 className="text-4xl lg:text-6xl font-extrabold text-primary hover:opacity-80 transition-opacity flex items-center justify-center">
+          <h1 className="text-4xl lg:text-6xl font-extrabold text-primary hover:opacity-80 transition-opacity flex items-center justify-center bg-clip-text text-transparent bg-gradient-to-r from-[#37beb0] to-[#29A0B1]">
             <LockIcon />
             LaterLock
           </h1>
