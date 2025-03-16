@@ -7,9 +7,9 @@ export default function Home() {
     <main className="flex flex-col items-center pt-16 px-4 md:px-8">
       <div className="max-w-3xl w-full space-y-12">
         <div className="text-center space-y-4">
-          <h1 className="text-6xl lg:text-8xl font-extrabold flex items-center justify-center bg-clip-text text-transparent bg-gradient-to-r from-[#37beb0] to-[#29A0B1]">
+          <h1 className="text-6xl lg:text-8xl font-extrabold flex items-center justify-center">
             <LockIcon />
-            LaterLock
+            <span className="bg-gradient-to-r text-transparent bg-clip-text from-[#37beb0] to-[#29A0B1]">LaterLock</span>
           </h1>
           <div className="text-2xl lg:text-3xl text-muted-foreground">
             <p>Store any text securely behind a time lock</p>
