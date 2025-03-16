@@ -21,9 +21,7 @@ COPY . .
 ENV NEXT_TELEMETRY_DISABLED 1
 
 # Install specific architecture dependencies for libsql
-RUN npm install @libsql/linux-arm64-musl --legacy-peer-deps
-# Ensure libsql modules are properly built for the target architecture
-RUN npm rebuild @libsql/client --target_arch=arm64 --target_platform=linux
+RUN npm install @libsql/linux-arm64-musl@0.4.7 --legacy-peer-deps
 RUN npm run build
 
 # Production image, copy all the files and run next
