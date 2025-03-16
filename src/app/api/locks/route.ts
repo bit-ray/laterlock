@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { nanoid } from "nanoid";
-import { db } from "@/db";
+import { getDb } from "@/db";
 import { locks } from "@/db/schema";
 import { encryptWithSystemKey } from "@/lib/crypto";
 import { ensureDbInitialized } from "@/lib/init-db";
@@ -51,10 +51,9 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Case 1: Client-side encrypted content
     if (encryptedContent && salt) {
       // Store the pre-encrypted content as-is
-      const newLock = await db.insert(locks).values({
+      const newLock = await getDb().insert(locks).values({
         id: nanoid(30),
         title,
         content: encryptedContent,
@@ -65,19 +64,16 @@ export async function POST(request: NextRequest) {
 
       return NextResponse.json(newLock[0]);
     }
-    // Case 2: No encryption, use system key encryption
     else if (content) {
-      // Encrypt with system key for non-password protected content
       const { encryptedContent, salt } = await encryptWithSystemKey(content);
 
-      // Create a new lock with system-encrypted content
-      const newLock = await db.insert(locks).values({
+      const newLock = await getDb().insert(locks).values({
         id: nanoid(30),
         title,
         content: encryptedContent,
         delayMinutes,
         salt,
-        isEncrypted: false, // Still mark as not encrypted from user perspective
+        isEncrypted: false,
       }).returning();
 
       return NextResponse.json(newLock[0]);

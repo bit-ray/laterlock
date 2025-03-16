@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { db } from "@/db";
+import { getDb } from "@/db";
 import { locks } from "@/db/schema";
 import { eq } from "drizzle-orm";
 import { ensureDbInitialized } from "@/lib/init-db";
@@ -10,10 +10,8 @@ export async function GET(
   props: { params: Promise<{ id: string }> }
 ) {
   try {
-    // Ensure the database is initialized
     await ensureDbInitialized();
 
-    // Use params.id after ensuring it's available
     const params = await props.params;
     const id = params?.id;
 
@@ -21,7 +19,7 @@ export async function GET(
       return NextResponse.json({ error: "Lock ID is required" }, { status: 400 });
     }
 
-    const result = await db
+    const result = await getDb()
       .select()
       .from(locks)
       .where(eq(locks.id, id))
@@ -52,12 +50,10 @@ export async function GET(
 }
 
 export async function POST(request: NextRequest, props: { params: Promise<{ id: string }> }) {
-  const params = await props.params;
   try {
-    // Ensure the database is initialized
     await ensureDbInitialized();
 
-    // Use params.id after ensuring it's available
+    const params = await props.params;
     const id = params?.id;
 
     if (!id) {
@@ -70,7 +66,7 @@ export async function POST(request: NextRequest, props: { params: Promise<{ id: 
       // Update access requested timestamp with current time in milliseconds since epoch
       const now = Date.now();
 
-      await db
+      await getDb()
         .update(locks)
         .set({ accessRequestedAt: now })
         .where(eq(locks.id, id));
@@ -78,7 +74,7 @@ export async function POST(request: NextRequest, props: { params: Promise<{ id: 
       return NextResponse.json({ message: "Access request recorded" });
     } else if (action === "cancel_request") {
       // Clear access requested timestamp
-      await db
+      await getDb()
         .update(locks)
         .set({ accessRequestedAt: null })
         .where(eq(locks.id, id));
@@ -86,7 +82,7 @@ export async function POST(request: NextRequest, props: { params: Promise<{ id: 
       return NextResponse.json({ message: "Access request canceled" });
     } else if (action === "re_lock") {
       // Clear access requested timestamp to re-lock the content
-      await db
+      await getDb()
         .update(locks)
         .set({ accessRequestedAt: null })
         .where(eq(locks.id, id));
@@ -94,7 +90,7 @@ export async function POST(request: NextRequest, props: { params: Promise<{ id: 
       return NextResponse.json({ message: "Content re-locked successfully" });
     } else if (action === "view_content") {
       // Retrieve the lock data to check access time
-      const lockData = await db
+      const lockData = await getDb()
         .select()
         .from(locks)
         .where(eq(locks.id, id))
@@ -131,7 +127,7 @@ export async function POST(request: NextRequest, props: { params: Promise<{ id: 
       // Update last accessed timestamp with current time in milliseconds
       const now = Date.now();
 
-      await db
+      await getDb()
         .update(locks)
         .set({ lastAccessed: now })
         .where(eq(locks.id, id));
@@ -193,10 +189,8 @@ export async function DELETE(
   props: { params: Promise<{ id: string }> }
 ) {
   try {
-    // Ensure the database is initialized
     await ensureDbInitialized();
 
-    // Use params.id after ensuring it's available
     const params = await props.params;
     const id = params?.id;
 
@@ -205,7 +199,7 @@ export async function DELETE(
     }
 
     // Check if the lock exists
-    const existingLock = await db
+    const existingLock = await getDb()
       .select()
       .from(locks)
       .where(eq(locks.id, id))
@@ -216,7 +210,7 @@ export async function DELETE(
     }
 
     // Delete the lock
-    await db
+    await getDb()
       .delete(locks)
       .where(eq(locks.id, id));
 

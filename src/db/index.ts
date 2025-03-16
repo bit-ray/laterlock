@@ -3,25 +3,50 @@ import { drizzle } from 'drizzle-orm/libsql';
 import * as schema from './schema';
 import { resolve } from 'path';
 
-// Get the database path from environment variable or use default
-// This allows mounting the database directory in Docker
-const DB_DIR = process.env.DB_DIR || process.cwd();
-const dbPath = resolve(DB_DIR, 'laterlock.db');
+let clientInstance: ReturnType<typeof createClient> | null = null;
+let dbInstance: ReturnType<typeof drizzle<typeof schema>> | null = null;
 
-// Initialize the database client
-// In a production app, we would use a proper Turso/LibSQL setup
-const client = createClient({
-  url: `file:${dbPath}`,
-});
+function getClient() {
+  if (!clientInstance) {
+    const DB_DIR = process.env.DB_DIR;
+    if (!DB_DIR) {
+      throw new Error('DB_DIR environment variable is missing');
+    }
 
-export const db = drizzle(client, { schema });
+    const encryptionKey = process.env.LATERLOCK_SYSTEM_KEY;
+    if (!encryptionKey || (process.env.NODE_ENV === "production" && encryptionKey === "DONOTUSE")) {
+      throw new Error('LATERLOCK_SYSTEM_KEY environment variable is missing');
+    }
 
-// Helper function to initialize the database tables
+    const dbPath = resolve(DB_DIR, 'laterlock.db');
+
+    clientInstance = createClient({
+      url: `file:${dbPath}`,
+      encryptionKey: encryptionKey,
+    });
+  }
+
+  return clientInstance;
+}
+
+export function getDb() {
+  if (!dbInstance) {
+    dbInstance = drizzle(getClient(), { schema });
+  }
+  return dbInstance;
+}
+
 export async function initializeDb() {
-  console.log(`Initializing database at: ${dbPath}`);
+  let client;
 
   try {
-    // Create table if it doesn't exist (with new INTEGER types)
+    client = getClient();
+  } catch (error) {
+    console.log('Error getting client:', error);
+    throw error;
+  }
+
+  try {
     await client.execute(`
       CREATE TABLE IF NOT EXISTS locks (
         id TEXT PRIMARY KEY,
@@ -35,10 +60,8 @@ export async function initializeDb() {
         last_accessed INTEGER
       );
     `);
-
-    console.log('Database schema initialized successfully');
   } catch (error) {
-    console.error('Error initializing database schema:', error);
+    console.log('Error initializing database schema:', error);
     throw error;
   }
 } 

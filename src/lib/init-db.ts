@@ -8,9 +8,8 @@ export async function ensureDbInitialized() {
   try {
     await initializeDb();
     initialized = true;
-    console.log("Database initialized successfully");
   } catch (error) {
-    console.error("Failed to initialize database:", error);
+    console.log("Failed to initialize database:", error);
     throw error;
   }
 } 
