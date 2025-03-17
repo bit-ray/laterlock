@@ -86,11 +86,7 @@ type AppAction =
   // Combined actions
   | { type: 'RE_LOCK'; payload: Lock }
   | {
-    type: 'FETCH_CONTENT_SUCCESS'; payload: {
-      contentData: LockContentType;
-      decryptedContent?: string;
-      showPasswordDialog: boolean;
-    }
+    type: 'FETCH_CONTENT_SUCCESS'; payload: LockContentType
   }
   | { type: 'DECRYPT_SUCCESS'; payload: string };
 
@@ -112,7 +108,7 @@ const appReducer = (state: AppState, action: AppAction): AppState => {
 
     // Dialog actions
     case 'TOGGLE_PASSWORD_DIALOG':
-      return { ...state, isPasswordDialogOpen: action.payload };
+      return { ...state, isPasswordDialogOpen: action.payload, password: "", decryptionError: "" };
     case 'TOGGLE_DELETE_DIALOG':
       return { ...state, isDeleteDialogOpen: action.payload };
 
@@ -147,12 +143,14 @@ const appReducer = (state: AppState, action: AppAction): AppState => {
       };
 
     case 'FETCH_CONTENT_SUCCESS':
+      const contentData = action.payload;
+      const decryptedContent = contentData.isEncrypted ? undefined : contentData.content;
       return {
         ...state,
-        lockContent: action.payload.contentData,
-        isPasswordDialogOpen: action.payload.showPasswordDialog,
-        decryptedContent: action.payload.decryptedContent || "",
-        showContent: !action.payload.showPasswordDialog && !!action.payload.decryptedContent
+        lockContent: contentData,
+        isPasswordDialogOpen: contentData.isEncrypted,
+        decryptedContent: decryptedContent || "",
+        showContent: !contentData.isEncrypted && !!decryptedContent
       };
 
     case 'DECRYPT_SUCCESS':
@@ -225,14 +223,14 @@ export default function LockPage(props: { params: Promise<{ id: string }> }) {
 
         // Make sure id is available
         if (!id) {
-          toast.error("Invalid lock ID");
+          toast.error("Invalid ID");
           return;
         }
 
         const response = await fetch(`/api/locks/${encodeURIComponent(id)}`);
 
         if (!response.ok) {
-          throw new Error("Failed to fetch lock");
+          throw new Error("Failed to fetch");
         }
 
         const data = await response.json();
@@ -243,8 +241,8 @@ export default function LockPage(props: { params: Promise<{ id: string }> }) {
           document.title = `${data.title} - LaterLock`;
         }
       } catch (error) {
-        console.error("Error fetching lock:", error);
-        toast.error("Failed to load lock data");
+        console.error("Error fetching:", error);
+        toast.error("Failed to load data");
       } finally {
         dispatch({ type: 'SET_LOADING', payload: false });
       }
@@ -264,7 +262,7 @@ export default function LockPage(props: { params: Promise<{ id: string }> }) {
 
       // Make sure id is available
       if (!id) {
-        toast.error("Invalid lock ID");
+        toast.error("Invalid ID");
         return;
       }
 
@@ -298,7 +296,7 @@ export default function LockPage(props: { params: Promise<{ id: string }> }) {
       dispatch({ type: 'SET_CANCELING_REQUEST', payload: true });
 
       if (!id) {
-        toast.error("Invalid lock ID");
+        toast.error("Invalid ID");
         return;
       }
 
@@ -330,7 +328,7 @@ export default function LockPage(props: { params: Promise<{ id: string }> }) {
   const handleReLock = async () => {
     try {
       if (!id) {
-        toast.error("Invalid lock ID");
+        toast.error("Invalid ID");
         return;
       }
 
@@ -363,7 +361,7 @@ export default function LockPage(props: { params: Promise<{ id: string }> }) {
       dispatch({ type: 'SET_FETCHING_CONTENT', payload: true });
 
       if (!id) {
-        toast.error("Invalid lock ID");
+        toast.error("Invalid ID");
         return;
       }
 
@@ -396,14 +394,7 @@ export default function LockPage(props: { params: Promise<{ id: string }> }) {
 
       const contentData = await response.json();
 
-      dispatch({
-        type: 'FETCH_CONTENT_SUCCESS',
-        payload: {
-          contentData,
-          decryptedContent: contentData.isEncrypted ? undefined : contentData.content,
-          showPasswordDialog: contentData.isEncrypted
-        }
-      });
+      dispatch({ type: 'FETCH_CONTENT_SUCCESS', payload: contentData });
     } catch (error) {
       console.error("Error fetching content:", error);
       toast.error(error instanceof Error ? error.message : "Failed to fetch content");
@@ -442,9 +433,8 @@ export default function LockPage(props: { params: Promise<{ id: string }> }) {
     try {
       dispatch({ type: 'SET_DELETING', payload: true });
 
-      // Make sure id is available
       if (!id) {
-        toast.error("Invalid lock ID");
+        toast.error("Invalid ID");
         return;
       }
 
@@ -453,14 +443,14 @@ export default function LockPage(props: { params: Promise<{ id: string }> }) {
       });
 
       if (!response.ok) {
-        throw new Error("Failed to delete lock");
+        throw new Error("Failed to delete");
       }
 
       // Redirect to home page
       router.push("/");
     } catch (error) {
-      console.error("Error deleting lock:", error);
-      toast.error("Failed to delete lock");
+      console.error("Error deleting:", error);
+      toast.error("Failed to delete");
     } finally {
       dispatch({ type: 'SET_DELETING', payload: false });
     }
@@ -489,9 +479,9 @@ export default function LockPage(props: { params: Promise<{ id: string }> }) {
       <div className="flex min-h-screen items-center justify-center">
         <div className="max-w-md w-full p-6 bg-background rounded-md">
           <div className="mb-4">
-            <h2 className="text-xl font-semibold">Lock Not Found</h2>
+            <h2 className="text-xl font-semibold">Not Found</h2>
             <p className="text-sm text-gray-500">
-              This lock doesn&apos;t exist.
+              This page doesn&apos;t exist.
             </p>
           </div>
           <div className="mt-4">
@@ -544,7 +534,6 @@ export default function LockPage(props: { params: Promise<{ id: string }> }) {
         onComplete={() => {
           // Only dispatch if not already complete
           if (!isCountdownComplete) {
-            console.log('Setting countdown complete', isCountdownComplete);
             dispatch({ type: 'SET_COUNTDOWN_COMPLETE', payload: true });
           }
         }}

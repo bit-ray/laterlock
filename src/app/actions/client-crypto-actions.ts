@@ -2,7 +2,6 @@
 
 import * as ClientCrypto from '@/lib/client-crypto';
 
-// Client-side encryption
 export async function encryptWithPassword(content: string, password: string): Promise<{
   encryptedContent: string;
   salt: string;
@@ -14,12 +13,11 @@ export async function encryptWithPassword(content: string, password: string): Pr
 
     return await ClientCrypto.encryptContent(content, password);
   } catch (error) {
-    console.error('Client-side encryption error:', error);
+    console.error('Encryption error:', error);
     throw new Error('Failed to encrypt content');
   }
 }
 
-// Client-side decryption
 export async function decryptWithPassword(
   encryptedContent: string,
   password: string,
@@ -37,10 +35,10 @@ export async function decryptWithPassword(
     const decrypted = await ClientCrypto.decryptContent(encryptedContent, password, salt);
     return { success: true, data: decrypted };
   } catch (error) {
-    console.error('Client-side decryption error:', error);
+    console.warn('Decryption error:', error);
     return {
       success: false,
-      error: 'Invalid password or corrupted data'
+      error: 'Wrong password'
     };
   }
 } 

@@ -23,7 +23,7 @@ export async function decryptWithErrorDetails(
     console.error('Decryption error with details:', error);
     return {
       success: false,
-      error: 'Invalid password or corrupted data'
+      error: 'Wrong password'
     };
   }
 } 

@@ -25,9 +25,9 @@ export function DeleteDialog({
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Delete Lock</DialogTitle>
+          <DialogTitle>Delete Item</DialogTitle>
           <DialogDescription>
-            Are you sure you want to delete this lock? This action cannot be undone.
+            Are you sure you want to delete this item? This action cannot be undone.
           </DialogDescription>
         </DialogHeader>
         <DialogFooter>
