@@ -2,19 +2,22 @@
 
 import { useEffect, useState, use } from "react";
 import { useRouter } from "next/navigation";
-import Link from "next/link";
 import { toast } from "sonner";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { decryptWithPassword } from "@/app/actions/client-crypto-actions";
-import Countdown from "react-countdown";
 import React from "react";
-import clsx from "clsx";
-import LockIcon from "@/components/LockIcon";
-import { ClipboardCopy } from "lucide-react";
+import { formatMinutes } from "@/utils/formatters";
+import { Button } from "@/components/ui/button";
 
+// Imported components
+import { LockPageHeader } from "../../components/lock/LockPageHeader";
+import { LockInfo } from "../../components/lock/LockInfo";
+import { LockCountdown } from "../../components/lock/LockCountdown";
+import { LockContent } from "../../components/lock/LockContent";
+import { PasswordDialog } from "../../components/lock/PasswordDialog";
+import { DeleteDialog } from "../../components/lock/DeleteDialog";
+import { UnlockButton } from "../../components/lock/UnlockButton";
+
+// Types - move to a separate file later if needed
 interface Lock {
   id: string;
   title?: string;
@@ -70,7 +73,8 @@ export default function LockPage(props: { params: Promise<{ id: string }> }) {
     }
   }, [countdownDate, lock]);
 
-  const isCountdownActive = !isCountdownComplete && lock?.accessRequestedAt;
+  // Fix: Ensure isCountdownActive is always a boolean by using double negation
+  const isCountdownActive = !isCountdownComplete && !!lock?.accessRequestedAt;
 
   // Get the ID from params
   const id = params.id;
@@ -362,64 +366,6 @@ export default function LockPage(props: { params: Promise<{ id: string }> }) {
     }
   };
 
-  const countdownRenderer = ({
-    days,
-    hours,
-    minutes,
-    seconds,
-    completed,
-  }: {
-    days: number;
-    hours: number;
-    minutes: number;
-    seconds: number;
-    completed: boolean;
-  }) => {
-    if (completed) {
-      return (
-        <div className="text-center flex flex-col gap-2">
-          <Button
-            onClick={handleFetchContent}
-            disabled={fetchingContent}
-            className="w-full"
-          >
-            {fetchingContent ? "Loading..." : "Show"}
-          </Button>
-          <Button
-            variant="outline"
-            onClick={handleReLock}
-            className="w-full"
-          >
-            Lock
-          </Button>
-        </div>
-      );
-    }
-
-    return (
-      <div className="text-center">
-        <p className="mb-2">Time remaining</p>
-        <p className={clsx(
-          "font-bold ",
-          days > 0 ? "text-7xl" : "text-6xl sm:text-8xl "
-        )}>
-          {days > 0 ? `${days}d ` : ''}
-          {hours.toString().padStart(2, "0")}:
-          {minutes.toString().padStart(2, "0")}:
-          {seconds.toString().padStart(2, "0")}
-        </p>
-        <Button
-          variant="outline"
-          className="w-full font-semibold text-xl py-4 sm:text-2xl sm:py-8 mt-4"
-          onClick={handleCancelRequest}
-          disabled={cancelingRequest}
-        >
-          {cancelingRequest ? "Canceling..." : "Cancel"}
-        </Button>
-      </div>
-    );
-  };
-
   if (isLoading) {
     return (
       <div className="flex min-h-screen items-center justify-center">
@@ -450,97 +396,47 @@ export default function LockPage(props: { params: Promise<{ id: string }> }) {
 
   return (
     <div className="container max-w-3xl py-8 mx-auto">
-      <div className="mb-6 text-center">
-        <Link href="/">
-          <h1 className="text-4xl lg:text-6xl font-extrabold text-primary hover:opacity-80 transition-opacity flex items-center justify-center">
-            <LockIcon />
-            <span className="bg-gradient-to-r text-transparent bg-clip-text from-[#37beb0] to-[#29A0B1]">LaterLock</span>
-          </h1>
-        </Link>
-      </div>
+      <LockPageHeader />
 
       <main className="flex flex-col items-center py-8 px-4 md:px-8">
         <div className="max-w-xl w-full">
           <div className="mb-8 p-6 bg-background rounded-md">
-            <div className="mb-6">
-              <div className="items-center">
-                <h2 className="text-2xl font-semibold text-center">
-                  {lock.title}
-                </h2>
-                <p className="text-center text-muted-foreground mt-1">
-                  {isCountdownComplete ? "Unlocked" : isCountdownActive ? "Unlocking" : lock.isEncrypted ? "Locked & Encrypted" : "Locked"}
-                </p>
-              </div>
-            </div>
+            <LockInfo
+              title={lock.title}
+              isCountdownComplete={isCountdownComplete}
+              isCountdownActive={isCountdownActive}
+              isEncrypted={lock.isEncrypted}
+            />
 
             <div className="mb-6">
               {showContent ? (
-                <div className="space-y-4">
-                  <div className="px-4 bg-background">
-                    <pre className="whitespace-pre-wrap break-words">
-                      {decryptedContent}
-                    </pre>
-                  </div>
-
-                  <div className="flex justify-end">
-                    {showContent && isCountdownComplete && (
-                      <Button
-                        onClick={handleCopyToClipboard}
-                        variant="link"
-                        size="sm"
-                        className="text-xs text-muted-foreground cursor-pointer"
-                      >
-                        <ClipboardCopy className="h-3 w-3 mr-1" />
-                      </Button>
-                    )}
-                  </div>
-
-                  <div className="flex flex-col gap-2">
-                    <Button
-                      variant="secondary"
-                      onClick={() => setShowContent(false)}
-                      className="w-full"
-                    >
-                      Hide
-                    </Button>
-                    <Button
-                      variant="outline"
-                      onClick={handleReLock}
-                      className="w-full"
-                    >
-                      Lock
-                    </Button>
-                  </div>
-                </div>
+                <LockContent
+                  content={decryptedContent}
+                  onHide={() => setShowContent(false)}
+                  onLock={handleReLock}
+                  onCopy={handleCopyToClipboard}
+                  isCountdownComplete={isCountdownComplete}
+                />
               ) : lock.accessRequestedAt ? (
-                <Countdown
-                  date={countdownDate}
-                  renderer={countdownRenderer}
-                  onComplete={() => {
-                    setIsCountdownComplete(true);
-                  }}
-                  controlled={false}
-                  precision={3}
-                  daysInHours={false}
-                  zeroPadTime={2}
-                  overtime={false}
-                  now={() => Date.now()}
+                <LockCountdown
+                  countdownDate={countdownDate}
+                  onComplete={() => setIsCountdownComplete(true)}
+                  onCancelRequest={handleCancelRequest}
+                  onFetchContent={handleFetchContent}
+                  onReLock={handleReLock}
+                  isCountdownComplete={isCountdownComplete}
+                  cancelingRequest={cancelingRequest}
+                  fetchingContent={fetchingContent}
                 />
               ) : (
-                <div className="space-y-4">
-                  <div className="p-4 bg-background text-center">
-                    <p className="mb-2 text-xl">Unlock delay is {formatMinutes(lock.delayMinutes)}</p>
-                  </div>
-                  <Button
-                    onClick={handleRequestAccess}
-                    disabled={requestingAccess}
-                    className="w-full font-semibold text-xl py-4 sm:text-2xl sm:py-8 mt-4"
-                  >
-                    {requestingAccess ? "Starting..." : "Start Unlock"}
-                  </Button>
-                </div>
+                <UnlockButton
+                  delayMinutes={lock.delayMinutes}
+                  onRequestAccess={handleRequestAccess}
+                  isLoading={requestingAccess}
+                />
               )}
             </div>
+
             <div className="pt-4 flex flex-row gap-2 items-center">
               <p className="text-xs text-muted-foreground w-full">
                 Created: {new Date(lock.createdAt).toLocaleString()}
@@ -560,99 +456,22 @@ export default function LockPage(props: { params: Promise<{ id: string }> }) {
           </div>
         </div>
 
-        <Dialog open={isPasswordDialogOpen} onOpenChange={setIsPasswordDialogOpen}>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Enter Password</DialogTitle>
-              <DialogDescription>
-                This content is encrypted. Enter the password to decrypt it.
-              </DialogDescription>
-            </DialogHeader>
-            <form onSubmit={(e) => {
-              e.preventDefault();
-              handleDecrypt();
-            }}>
-              <div className="space-y-4 py-4">
-                <div className="space-y-2">
-                  <Label htmlFor="password">Password</Label>
-                  <Input
-                    id="password"
-                    type="password"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    placeholder="Enter the password"
-                    autoFocus
-                  />
-                  {decryptionError && (
-                    <p className="text-sm text-red-500">{decryptionError}</p>
-                  )}
-                </div>
-              </div>
-              <DialogFooter>
-                <Button type="submit">Decrypt</Button>
-              </DialogFooter>
-            </form>
-          </DialogContent>
-        </Dialog>
+        <PasswordDialog
+          isOpen={isPasswordDialogOpen}
+          onOpenChange={setIsPasswordDialogOpen}
+          password={password}
+          onPasswordChange={setPassword}
+          onDecrypt={handleDecrypt}
+          error={decryptionError}
+        />
 
-        <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Delete Lock</DialogTitle>
-              <DialogDescription>
-                Are you sure you want to delete this lock? This action cannot be undone.
-              </DialogDescription>
-            </DialogHeader>
-            <DialogFooter>
-              <Button
-                variant="outline"
-                onClick={() => setIsDeleteDialogOpen(false)}
-                disabled={isDeleting}
-              >
-                Cancel
-              </Button>
-              <Button
-                variant="destructive"
-                onClick={handleDeleteLock}
-                disabled={isDeleting}
-              >
-                {isDeleting ? (
-                  <>
-                    <div className="mr-2 h-4 w-4 animate-spin rounded-full border-b-2 border-current"></div>
-                    Deleting...
-                  </>
-                ) : (
-                  "Delete"
-                )}
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
+        <DeleteDialog
+          isOpen={isDeleteDialogOpen}
+          onOpenChange={setIsDeleteDialogOpen}
+          onDelete={handleDeleteLock}
+          isDeleting={isDeleting}
+        />
       </main>
     </div>
   );
-}
-
-function formatMinutes(minutes: number): string {
-  if (minutes < 60) {
-    return `${minutes} minute${minutes !== 1 ? "s" : ""}`;
-  } else if (minutes < 1440) {
-    const hours = Math.floor(minutes / 60);
-    const remainingMinutes = minutes % 60;
-
-    if (remainingMinutes === 0) {
-      return `${hours} hour${hours !== 1 ? "s" : ""}`;
-    } else {
-      return `${hours} hour${hours !== 1 ? "s" : ""} and ${remainingMinutes} minute${remainingMinutes !== 1 ? "s" : ""}`;
-    }
-  } else {
-    const days = Math.floor(minutes / 1440);
-    const remainingHours = Math.floor((minutes % 1440) / 60);
-
-    if (remainingHours === 0) {
-      return `${days} day${days !== 1 ? "s" : ""}`;
-    } else {
-      return `${days} day${days !== 1 ? "s" : ""} and ${remainingHours} hour${remainingHours !== 1 ? "s" : ""}`;
-    }
-  }
 } 
