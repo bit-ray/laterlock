@@ -540,7 +540,6 @@ export default function LockPage(props: { params: Promise<{ id: string }> }) {
         onCancelRequest={handleCancelRequest}
         onFetchContent={handleFetchContent}
         onReLock={handleReLock}
-        isCountdownComplete={isCountdownComplete}
         cancelingRequest={cancelingRequest}
         fetchingContent={fetchingContent}
       />

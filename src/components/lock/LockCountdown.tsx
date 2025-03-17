@@ -8,7 +8,6 @@ interface LockCountdownProps {
   onCancelRequest: () => void;
   onFetchContent: () => void;
   onReLock: () => void;
-  isCountdownComplete: boolean;
   cancelingRequest: boolean;
   fetchingContent: boolean;
 }
@@ -19,7 +18,6 @@ export function LockCountdown({
   onCancelRequest,
   onFetchContent,
   onReLock,
-  isCountdownComplete,
   cancelingRequest,
   fetchingContent
 }: LockCountdownProps) {

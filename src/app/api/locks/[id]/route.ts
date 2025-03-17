@@ -6,7 +6,7 @@ import { ensureDbInitialized } from "@/lib/init-db";
 import { decryptWithSystemKey } from "@/lib/crypto";
 
 // Helper function to calculate unlock time remaining
-function calculateUnlockTimeRemaining(lock: any): number | null {
+function calculateUnlockTimeRemaining(lock: { accessRequestedAt: number | null, delayMinutes: number }): number | null {
   if (!lock.accessRequestedAt) {
     return null;
   }
@@ -49,10 +49,8 @@ export async function GET(
 
     const lock = result[0];
 
-    // Calculate unlockTimeRemaining
     const unlockTimeRemaining = calculateUnlockTimeRemaining(lock);
 
-    // Return non-sensitive data
     return NextResponse.json({
       id: lock.id,
       title: lock.title,
