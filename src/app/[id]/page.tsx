@@ -35,6 +35,7 @@ interface AppState {
   lock: Lock | null;
   lockContent: LockContentType | null;
   decryptedContent: string;
+  countdownDate: Date | null;
 
   // UI state
   showContent: boolean;
@@ -94,7 +95,15 @@ const appReducer = (state: AppState, action: AppAction): AppState => {
   switch (action.type) {
     // Lock actions
     case 'SET_LOCK':
-      return { ...state, lock: action.payload, isCountdownComplete: (!!action.payload?.accessRequestedAt && action.payload?.unlockTimeRemaining === 0) };
+      const newCountdownDate = action.payload?.accessRequestedAt
+        ? new Date(Date.now() + action.payload.unlockTimeRemaining!)
+        : null;
+      return {
+        ...state,
+        lock: action.payload,
+        isCountdownComplete: (!!action.payload?.accessRequestedAt && action.payload?.unlockTimeRemaining === 0),
+        countdownDate: newCountdownDate
+      };
     case 'SET_LOCK_CONTENT':
       return { ...state, lockContent: action.payload };
     case 'SET_DECRYPTED_CONTENT':
@@ -139,7 +148,8 @@ const appReducer = (state: AppState, action: AppAction): AppState => {
         lock: action.payload,
         showContent: false,
         isCountdownComplete: false,
-        decryptedContent: ""
+        decryptedContent: "",
+        countdownDate: null
       };
 
     case 'FETCH_CONTENT_SUCCESS':
@@ -176,6 +186,7 @@ export default function LockPage(props: { params: Promise<{ id: string }> }) {
     lock: null,
     lockContent: null,
     decryptedContent: "",
+    countdownDate: null,
 
     // UI state
     showContent: false,
@@ -204,12 +215,8 @@ export default function LockPage(props: { params: Promise<{ id: string }> }) {
     showContent, isCountdownComplete,
     isPasswordDialogOpen, isDeleteDialogOpen,
     isLoading, requestingAccess, cancelingRequest, fetchingContent, isDeleting,
-    decryptionError, password
+    decryptionError, password, countdownDate
   } = state;
-
-  const countdownDate = lock?.accessRequestedAt
-    ? new Date(Date.now() + lock.unlockTimeRemaining!)
-    : null;
 
   const isCountdownActive = !isCountdownComplete && !!lock?.accessRequestedAt;
 
