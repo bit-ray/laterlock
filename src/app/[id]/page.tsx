@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, use } from "react";
+import { useEffect, useState, use, useReducer } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { decryptWithPassword } from "@/app/actions/client-crypto-actions";
@@ -25,64 +25,217 @@ interface Lock {
   isEncrypted: boolean;
   accessRequestedAt: string | null;
   createdAt: string;
+  unlockTimeRemaining: number | null;
 }
 
-interface LockContent {
+interface LockContentType {
   content: string;
   isEncrypted: boolean;
   salt?: string;
 }
 
+// Define state interfaces
+interface LockState {
+  lock: Lock | null;
+  lockContent: LockContentType | null;
+  decryptedContent: string;
+}
+
+interface UIState {
+  showContent: boolean;
+  isCountdownComplete: boolean;
+}
+
+interface DialogState {
+  isPasswordDialogOpen: boolean;
+  isDeleteDialogOpen: boolean;
+}
+
+interface LoadingState {
+  isLoading: boolean;
+  requestingAccess: boolean;
+  cancelingRequest: boolean;
+  fetchingContent: boolean;
+  isDeleting: boolean;
+}
+
+interface ErrorState {
+  decryptionError: string;
+}
+
+interface PasswordState {
+  password: string;
+}
+
+// Define action types
+type LockAction =
+  | { type: 'SET_LOCK'; payload: Lock | null }
+  | { type: 'SET_LOCK_CONTENT'; payload: LockContentType | null }
+  | { type: 'SET_DECRYPTED_CONTENT'; payload: string };
+
+type UIAction =
+  | { type: 'SHOW_CONTENT'; payload: boolean }
+  | { type: 'SET_COUNTDOWN_COMPLETE'; payload: boolean };
+
+type DialogAction =
+  | { type: 'TOGGLE_PASSWORD_DIALOG'; payload: boolean }
+  | { type: 'TOGGLE_DELETE_DIALOG'; payload: boolean };
+
+type LoadingAction =
+  | { type: 'SET_LOADING'; payload: boolean }
+  | { type: 'SET_REQUESTING_ACCESS'; payload: boolean }
+  | { type: 'SET_CANCELING_REQUEST'; payload: boolean }
+  | { type: 'SET_FETCHING_CONTENT'; payload: boolean }
+  | { type: 'SET_DELETING'; payload: boolean };
+
+type ErrorAction =
+  | { type: 'SET_DECRYPTION_ERROR'; payload: string };
+
+type PasswordAction =
+  | { type: 'SET_PASSWORD'; payload: string };
+
+// Define reducers
+const lockReducer = (state: LockState, action: LockAction): LockState => {
+  switch (action.type) {
+    case 'SET_LOCK':
+      return { ...state, lock: action.payload };
+    case 'SET_LOCK_CONTENT':
+      return { ...state, lockContent: action.payload };
+    case 'SET_DECRYPTED_CONTENT':
+      return { ...state, decryptedContent: action.payload };
+    default:
+      return state;
+  }
+};
+
+const uiReducer = (state: UIState, action: UIAction): UIState => {
+  switch (action.type) {
+    case 'SHOW_CONTENT':
+      return { ...state, showContent: action.payload };
+    case 'SET_COUNTDOWN_COMPLETE':
+      console.log('SET_COUNTDOWN_COMPLETE', state.isCountdownComplete, action.payload);
+      return { ...state, isCountdownComplete: action.payload };
+    default:
+      return state;
+  }
+};
+
+const dialogReducer = (state: DialogState, action: DialogAction): DialogState => {
+  switch (action.type) {
+    case 'TOGGLE_PASSWORD_DIALOG':
+      return { ...state, isPasswordDialogOpen: action.payload };
+    case 'TOGGLE_DELETE_DIALOG':
+      return { ...state, isDeleteDialogOpen: action.payload };
+    default:
+      return state;
+  }
+};
+
+const loadingReducer = (state: LoadingState, action: LoadingAction): LoadingState => {
+  switch (action.type) {
+    case 'SET_LOADING':
+      return { ...state, isLoading: action.payload };
+    case 'SET_REQUESTING_ACCESS':
+      return { ...state, requestingAccess: action.payload };
+    case 'SET_CANCELING_REQUEST':
+      return { ...state, cancelingRequest: action.payload };
+    case 'SET_FETCHING_CONTENT':
+      return { ...state, fetchingContent: action.payload };
+    case 'SET_DELETING':
+      return { ...state, isDeleting: action.payload };
+    default:
+      return state;
+  }
+};
+
+const errorReducer = (state: ErrorState, action: ErrorAction): ErrorState => {
+  switch (action.type) {
+    case 'SET_DECRYPTION_ERROR':
+      return { ...state, decryptionError: action.payload };
+    default:
+      return state;
+  }
+};
+
+const passwordReducer = (state: PasswordState, action: PasswordAction): PasswordState => {
+  switch (action.type) {
+    case 'SET_PASSWORD':
+      return { ...state, password: action.payload };
+    default:
+      return state;
+  }
+};
+
 export default function LockPage(props: { params: Promise<{ id: string }> }) {
   const params = use(props.params);
   const router = useRouter();
-  const [lock, setLock] = useState<Lock | null>(null);
-  const [lockContent, setLockContent] = useState<LockContent | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [requestingAccess, setRequestingAccess] = useState(false);
-  const [cancelingRequest, setCancelingRequest] = useState(false);
-  const [fetchingContent, setFetchingContent] = useState(false);
-  const [password, setPassword] = useState("");
-  const [showContent, setShowContent] = useState(false);
-  const [isPasswordDialogOpen, setIsPasswordDialogOpen] = useState(false);
-  const [decryptedContent, setDecryptedContent] = useState("");
-  const [decryptionError, setDecryptionError] = useState("");
-  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
-  const [isDeleting, setIsDeleting] = useState(false);
-  const [isCountdownComplete, setIsCountdownComplete] = useState(false);
+
+  const [lockState, dispatchLock] = useReducer(lockReducer, {
+    lock: null,
+    lockContent: null,
+    decryptedContent: ""
+  });
+
+  const [uiState, dispatchUI] = useReducer(uiReducer, {
+    showContent: false,
+    isCountdownComplete: false
+  });
+
+  const [dialogState, dispatchDialog] = useReducer(dialogReducer, {
+    isPasswordDialogOpen: false,
+    isDeleteDialogOpen: false
+  });
+
+  const [loadingState, dispatchLoading] = useReducer(loadingReducer, {
+    isLoading: true,
+    requestingAccess: false,
+    cancelingRequest: false,
+    fetchingContent: false,
+    isDeleting: false
+  });
+
+  const [errorState, dispatchError] = useReducer(errorReducer, {
+    decryptionError: ""
+  });
+
+  const [passwordState, dispatchPassword] = useReducer(passwordReducer, {
+    password: ""
+  });
+
+  const { lock, lockContent, decryptedContent } = lockState;
+  const { showContent, isCountdownComplete } = uiState;
+  const { isPasswordDialogOpen, isDeleteDialogOpen } = dialogState;
+  const { isLoading, requestingAccess, cancelingRequest, fetchingContent, isDeleting } = loadingState;
+  const { decryptionError } = errorState;
+  const { password } = passwordState;
 
   // Calculate countdown target date based on accessRequestedAt and delayMinutes
   const countdownDate = lock?.accessRequestedAt
     ? (() => {
-      // Use the timestamp directly (already in milliseconds since epoch)
-      const requestTime = lock.accessRequestedAt;
 
-      // Add delay in milliseconds
-      const delayMs = parseInt(String(lock.delayMinutes), 10) * 60000;
-      const targetTime = new Date(requestTime + delayMs);
+      return new Date(Date.now() + lock.unlockTimeRemaining!);
 
-      return targetTime;
+      // // Use the timestamp directly (already in milliseconds since epoch)
+      // const requestTime = lock.accessRequestedAt;
+
+      // // Add delay in milliseconds
+      // const delayMs = parseInt(String(lock.delayMinutes), 10) * 60000;
+      // const targetTime = new Date(requestTime + delayMs);
+
+      // return targetTime;
     })()
     : null;
 
-  // Check if countdown has completed and update state
-  useEffect(() => {
-    if (countdownDate) {
-      const currentTime = new Date();
-      setIsCountdownComplete(currentTime >= countdownDate);
-    }
-  }, [countdownDate, lock]);
-
-  // Fix: Ensure isCountdownActive is always a boolean by using double negation
   const isCountdownActive = !isCountdownComplete && !!lock?.accessRequestedAt;
 
   // Get the ID from params
   const id = params.id;
 
+  // Initial load
   useEffect(() => {
     const fetchLock = async () => {
       try {
-        setIsLoading(true);
+        dispatchLoading({ type: 'SET_LOADING', payload: true });
 
         // Make sure id is available
         if (!id) {
@@ -97,7 +250,7 @@ export default function LockPage(props: { params: Promise<{ id: string }> }) {
         }
 
         const data = await response.json();
-        setLock(data);
+        dispatchLock({ type: 'SET_LOCK', payload: data });
 
         // Set the page title if lock title exists
         if (data.title) {
@@ -106,18 +259,13 @@ export default function LockPage(props: { params: Promise<{ id: string }> }) {
 
         // Check if countdown is complete on initial load
         if (data.accessRequestedAt) {
-          const requestTime = data.accessRequestedAt; // Already in milliseconds
-          const delayMs = parseInt(String(data.delayMinutes), 10) * 60000;
-          const targetTime = new Date(requestTime + delayMs);
-          const currentTime = new Date();
-
-          setIsCountdownComplete(currentTime >= targetTime);
+          dispatchUI({ type: 'SET_COUNTDOWN_COMPLETE', payload: data.unlockTimeRemaining === 0 });
         }
       } catch (error) {
         console.error("Error fetching lock:", error);
         toast.error("Failed to load lock data");
       } finally {
-        setIsLoading(false);
+        dispatchLoading({ type: 'SET_LOADING', payload: false });
       }
     };
 
@@ -131,7 +279,7 @@ export default function LockPage(props: { params: Promise<{ id: string }> }) {
 
   const handleRequestAccess = async () => {
     try {
-      setRequestingAccess(true);
+      dispatchLoading({ type: 'SET_REQUESTING_ACCESS', payload: true });
 
       // Make sure id is available
       if (!id) {
@@ -154,20 +302,20 @@ export default function LockPage(props: { params: Promise<{ id: string }> }) {
       // Refresh lock data
       const updatedLockResponse = await fetch(`/api/locks/${encodeURIComponent(id)}`);
       const updatedLock = await updatedLockResponse.json();
-      setLock(updatedLock);
+      dispatchLock({ type: 'SET_LOCK', payload: updatedLock });
 
       // toast.success("Access request initiated");
     } catch (error) {
       console.error("Error requesting unlock:", error);
       toast.error("Failed to request unlock");
     } finally {
-      setRequestingAccess(false);
+      dispatchLoading({ type: 'SET_REQUESTING_ACCESS', payload: false });
     }
   };
 
   const handleCancelRequest = async () => {
     try {
-      setCancelingRequest(true);
+      dispatchLoading({ type: 'SET_CANCELING_REQUEST', payload: true });
 
       // Make sure id is available
       if (!id) {
@@ -190,14 +338,14 @@ export default function LockPage(props: { params: Promise<{ id: string }> }) {
       // Refresh lock data
       const updatedLockResponse = await fetch(`/api/locks/${encodeURIComponent(id)}`);
       const updatedLock = await updatedLockResponse.json();
-      setLock(updatedLock);
+      dispatchLock({ type: 'SET_LOCK', payload: updatedLock });
 
       // toast.success("Access request canceled");
     } catch (error) {
       console.error("Error canceling unlock:", error);
       toast.error("Failed to cancel unlock");
     } finally {
-      setCancelingRequest(false);
+      dispatchLoading({ type: 'SET_CANCELING_REQUEST', payload: false });
     }
   };
 
@@ -224,14 +372,14 @@ export default function LockPage(props: { params: Promise<{ id: string }> }) {
       // Refresh lock data
       const updatedLockResponse = await fetch(`/api/locks/${encodeURIComponent(id)}`);
       const updatedLock = await updatedLockResponse.json();
-      setLock(updatedLock);
+      dispatchLock({ type: 'SET_LOCK', payload: updatedLock });
 
       // Reset countdown state
-      setIsCountdownComplete(false);
+      dispatchUI({ type: 'SET_COUNTDOWN_COMPLETE', payload: false });
 
       // Hide content if it was showing
-      setShowContent(false);
-      setDecryptedContent("");
+      dispatchUI({ type: 'SHOW_CONTENT', payload: false });
+      dispatchLock({ type: 'SET_DECRYPTED_CONTENT', payload: "" });
 
       // toast.success("Locked");
     } catch (error) {
@@ -242,7 +390,7 @@ export default function LockPage(props: { params: Promise<{ id: string }> }) {
 
   const handleFetchContent = async () => {
     try {
-      setFetchingContent(true);
+      dispatchLoading({ type: 'SET_FETCHING_CONTENT', payload: true });
 
       // Make sure id is available
       if (!id) {
@@ -270,7 +418,7 @@ export default function LockPage(props: { params: Promise<{ id: string }> }) {
           // Refresh the lock to sync client state with server
           const updatedLockResponse = await fetch(`/api/locks/${encodeURIComponent(id)}`);
           const updatedLock = await updatedLockResponse.json();
-          setLock(updatedLock);
+          dispatchLock({ type: 'SET_LOCK', payload: updatedLock });
 
           return;
         }
@@ -279,19 +427,19 @@ export default function LockPage(props: { params: Promise<{ id: string }> }) {
       }
 
       const contentData = await response.json();
-      setLockContent(contentData);
+      dispatchLock({ type: 'SET_LOCK_CONTENT', payload: contentData });
 
       if (contentData.isEncrypted) {
-        setIsPasswordDialogOpen(true);
+        dispatchDialog({ type: 'TOGGLE_PASSWORD_DIALOG', payload: true });
       } else {
-        setDecryptedContent(contentData.content);
-        setShowContent(true);
+        dispatchLock({ type: 'SET_DECRYPTED_CONTENT', payload: contentData.content });
+        dispatchUI({ type: 'SHOW_CONTENT', payload: true });
       }
     } catch (error) {
       console.error("Error fetching content:", error);
       toast.error(error instanceof Error ? error.message : "Failed to fetch content");
     } finally {
-      setFetchingContent(false);
+      dispatchLoading({ type: 'SET_FETCHING_CONTENT', payload: false });
     }
   };
 
@@ -299,10 +447,10 @@ export default function LockPage(props: { params: Promise<{ id: string }> }) {
     if (!lockContent) return;
 
     try {
-      setDecryptionError("");
+      dispatchError({ type: 'SET_DECRYPTION_ERROR', payload: "" });
 
       if (!password) {
-        setDecryptionError("Password is required");
+        dispatchError({ type: 'SET_DECRYPTION_ERROR', payload: "Password is required" });
         return;
       }
 
@@ -313,21 +461,21 @@ export default function LockPage(props: { params: Promise<{ id: string }> }) {
       );
 
       if (result.success && result.data) {
-        setDecryptedContent(result.data);
-        setShowContent(true);
-        setIsPasswordDialogOpen(false);
+        dispatchLock({ type: 'SET_DECRYPTED_CONTENT', payload: result.data });
+        dispatchUI({ type: 'SHOW_CONTENT', payload: true });
+        dispatchDialog({ type: 'TOGGLE_PASSWORD_DIALOG', payload: false });
       } else {
-        setDecryptionError(result.error || "Decryption failed");
+        dispatchError({ type: 'SET_DECRYPTION_ERROR', payload: result.error || "Decryption failed" });
       }
     } catch (error) {
       console.error("Decryption error:", error);
-      setDecryptionError("An unexpected error occurred");
+      dispatchError({ type: 'SET_DECRYPTION_ERROR', payload: "An unexpected error occurred" });
     }
   };
 
   const handleDeleteLock = async () => {
     try {
-      setIsDeleting(true);
+      dispatchLoading({ type: 'SET_DELETING', payload: true });
 
       // Make sure id is available
       if (!id) {
@@ -351,8 +499,8 @@ export default function LockPage(props: { params: Promise<{ id: string }> }) {
       console.error("Error deleting lock:", error);
       toast.error("Failed to delete lock");
     } finally {
-      setIsDeleting(false);
-      setIsDeleteDialogOpen(false);
+      dispatchLoading({ type: 'SET_DELETING', payload: false });
+      dispatchDialog({ type: 'TOGGLE_DELETE_DIALOG', payload: false });
     }
   };
 
@@ -394,6 +542,68 @@ export default function LockPage(props: { params: Promise<{ id: string }> }) {
     );
   }
 
+  let inner;
+
+  if (isCountdownComplete) {
+    if (showContent) {
+      inner = (
+        <LockContent
+          content={decryptedContent}
+          onHide={() => dispatchUI({ type: 'SHOW_CONTENT', payload: false })}
+          onLock={handleReLock}
+          onCopy={handleCopyToClipboard}
+          isCountdownComplete={isCountdownComplete}
+        />
+      );
+    } else {
+      inner = (
+        <div className="text-center flex flex-col gap-2">
+          <Button
+            onClick={handleFetchContent}
+            disabled={fetchingContent}
+            className="w-full"
+          >
+            {fetchingContent ? "Loading..." : "Show"}
+          </Button>
+          <Button
+            variant="outline"
+            onClick={handleReLock}
+            className="w-full"
+          >
+            Lock
+          </Button>
+        </div>
+      );
+    }
+  } else if (isCountdownActive) {
+    inner = (
+      <LockCountdown
+        countdownDate={countdownDate}
+        onComplete={() => {
+          // Only dispatch if not already complete
+          if (!isCountdownComplete) {
+            console.log('Setting countdown complete', isCountdownComplete);
+            dispatchUI({ type: 'SET_COUNTDOWN_COMPLETE', payload: true });
+          }
+        }}
+        onCancelRequest={handleCancelRequest}
+        onFetchContent={handleFetchContent}
+        onReLock={handleReLock}
+        isCountdownComplete={isCountdownComplete}
+        cancelingRequest={cancelingRequest}
+        fetchingContent={fetchingContent}
+      />
+    );
+  } else {
+    inner = (
+      <UnlockButton
+        delayMinutes={lock.delayMinutes}
+        onRequestAccess={handleRequestAccess}
+        isLoading={requestingAccess}
+      />
+    );
+  }
+
   return (
     <div className="container max-w-3xl py-8 mx-auto">
       <LockPageHeader />
@@ -409,32 +619,7 @@ export default function LockPage(props: { params: Promise<{ id: string }> }) {
             />
 
             <div className="mb-6">
-              {showContent ? (
-                <LockContent
-                  content={decryptedContent}
-                  onHide={() => setShowContent(false)}
-                  onLock={handleReLock}
-                  onCopy={handleCopyToClipboard}
-                  isCountdownComplete={isCountdownComplete}
-                />
-              ) : lock.accessRequestedAt ? (
-                <LockCountdown
-                  countdownDate={countdownDate}
-                  onComplete={() => setIsCountdownComplete(true)}
-                  onCancelRequest={handleCancelRequest}
-                  onFetchContent={handleFetchContent}
-                  onReLock={handleReLock}
-                  isCountdownComplete={isCountdownComplete}
-                  cancelingRequest={cancelingRequest}
-                  fetchingContent={fetchingContent}
-                />
-              ) : (
-                <UnlockButton
-                  delayMinutes={lock.delayMinutes}
-                  onRequestAccess={handleRequestAccess}
-                  isLoading={requestingAccess}
-                />
-              )}
+              {inner}
             </div>
 
             <div className="pt-4 flex flex-row gap-2 items-center">
@@ -443,7 +628,7 @@ export default function LockPage(props: { params: Promise<{ id: string }> }) {
               </p>
               <Button
                 variant="ghost"
-                onClick={() => setIsDeleteDialogOpen(true)}
+                onClick={() => dispatchDialog({ type: 'TOGGLE_DELETE_DIALOG', payload: true })}
               >
                 Delete
               </Button>
@@ -458,16 +643,16 @@ export default function LockPage(props: { params: Promise<{ id: string }> }) {
 
         <PasswordDialog
           isOpen={isPasswordDialogOpen}
-          onOpenChange={setIsPasswordDialogOpen}
+          onOpenChange={(open) => dispatchDialog({ type: 'TOGGLE_PASSWORD_DIALOG', payload: open })}
           password={password}
-          onPasswordChange={setPassword}
+          onPasswordChange={(value) => dispatchPassword({ type: 'SET_PASSWORD', payload: value })}
           onDecrypt={handleDecrypt}
           error={decryptionError}
         />
 
         <DeleteDialog
           isOpen={isDeleteDialogOpen}
-          onOpenChange={setIsDeleteDialogOpen}
+          onOpenChange={(open) => dispatchDialog({ type: 'TOGGLE_DELETE_DIALOG', payload: open })}
           onDelete={handleDeleteLock}
           isDeleting={isDeleting}
         />

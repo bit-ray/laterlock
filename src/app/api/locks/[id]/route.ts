@@ -5,6 +5,24 @@ import { eq } from "drizzle-orm";
 import { ensureDbInitialized } from "@/lib/init-db";
 import { decryptWithSystemKey } from "@/lib/crypto";
 
+// Helper function to calculate unlock time remaining
+function calculateUnlockTimeRemaining(lock: any): number | null {
+  if (!lock.accessRequestedAt) {
+    return null;
+  }
+
+  const accessRequestTime = lock.accessRequestedAt; // Already in milliseconds
+  const delayMilliseconds = lock.delayMinutes * 60 * 1000;
+  const targetUnlockTime = accessRequestTime + delayMilliseconds;
+  const currentTime = Date.now();
+
+  if (currentTime < targetUnlockTime) {
+    return targetUnlockTime - currentTime;
+  } else {
+    return 0;
+  }
+}
+
 export async function GET(
   request: NextRequest,
   props: { params: Promise<{ id: string }> }
@@ -31,6 +49,9 @@ export async function GET(
 
     const lock = result[0];
 
+    // Calculate unlockTimeRemaining
+    const unlockTimeRemaining = calculateUnlockTimeRemaining(lock);
+
     // Return non-sensitive data
     return NextResponse.json({
       id: lock.id,
@@ -39,6 +60,7 @@ export async function GET(
       isEncrypted: lock.isEncrypted,
       accessRequestedAt: lock.accessRequestedAt,
       createdAt: lock.createdAt,
+      unlockTimeRemaining: unlockTimeRemaining,
     });
   } catch (error) {
     console.error("Error retrieving lock:", error);
