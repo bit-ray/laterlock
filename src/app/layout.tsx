@@ -24,9 +24,14 @@ export default function RootLayout({
             {children}
           </div>
           <Toaster position="bottom-right" />
-          <footer className="mt-12 text-center text-sm text-muted-foreground py-8">
+          <footer className="mt-12 text-center text-sm text-muted-foreground pt-8 pb-2">
+            <div className="flex flex-col sm:flex-row justify-center gap-0 sm:gap-2">
+              <p>Copyright 2025 LaterLock</p>
+              <p>
+                <a href="https://www.flaticon.com/free-icons/vault" title="vault icons">Vault icon by Andrejs Kirma</a>
+              </p>
+            </div>
             <p>By using LaterLock, you agree to our <Link href="/terms" className="underline">Terms of Service</Link>.</p>
-            <p>Copyright 2025 LaterLock</p>
             <p>Made with ❤️ by <Link href="https://linktr.ee/blakeraymond_" className="underline">Blake Raymond</Link></p>
           </footer>
         </div>

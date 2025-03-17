@@ -8,7 +8,7 @@ export default function Home() {
       <div className="max-w-3xl w-full space-y-12">
         <div className="text-center space-y-4">
           <h1 className="text-6xl lg:text-8xl font-extrabold flex items-center justify-center">
-            <LockIcon />
+            <LockIcon className="w-12 h-12 lg:w-16 lg:h-16 mr-2" />
             <span className="bg-gradient-to-r text-transparent bg-clip-text from-[#37beb0] to-[#29A0B1]">LaterLock</span>
           </h1>
           <div className="text-2xl lg:text-3xl text-muted-foreground">
