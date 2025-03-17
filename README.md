@@ -12,9 +12,9 @@ LaterLock is a simple Next.js application that allows securely storing text behi
 
 ## Is it secure?
 
-When a password is provided, data is encrypted in the browser. Otherwise, it's encrypted on the server with a system-wide key.
+When a password is provided, data is encrypted in the browser. Otherwise, it's encrypted on the server with a system-wide key plus salt. Then the sqlite database is encrypted at the page level using SQLCipher.
 
-Encryption is done using AES-256-GCM and PBKDF2 with HMAC-SHA-256 (600,000 iterations) for key derivation, similar to the encryption used by password managers.
+Content encryption is done using AES-256-GCM and PBKDF2 with HMAC-SHA-256 (600,000 iterations) for key derivation, similar to the encryption used by password managers.
 
 The unique URL to the lock page uses a nanoid (which uses secure RNG) with 30 characters, which is overkill.
 
