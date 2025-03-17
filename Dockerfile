@@ -34,13 +34,6 @@ ENV NEXT_TELEMETRY_DISABLED 1
 RUN addgroup --system --gid 1001 nodejs
 RUN adduser --system --uid 1001 nextjs
 
-# Create a directory for the database that can be mounted as a volume
-RUN mkdir -p /app/data
-# Change permissions to allow writing to the directory even if mounted with different ownership
-RUN chmod 777 /app/data
-# Still set the ownership for when not using volume mounts
-RUN chown nextjs:nodejs /app/data
-
 COPY --from=builder /app/public ./public
 
 # Set the correct permission for prerender cache
